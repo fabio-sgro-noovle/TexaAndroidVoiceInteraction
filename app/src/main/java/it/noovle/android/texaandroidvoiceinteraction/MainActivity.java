@@ -6,12 +6,24 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.support.v7.app.ActionBarActivity;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.VolleyLog;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.Volley;
+
+import org.json.JSONArray;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -20,15 +32,23 @@ import java.util.Random;
 
 public class MainActivity extends ActionBarActivity {
 
+    public static final String TAG = MainActivity.class.getSimpleName();
+    private static MainActivity mIstance;
     private final int REQ_CODE_SPEECH_INPUT = 100;
+    private RequestQueue mRequestQueue;
     private ImageButton btnSpeak;
     private TextView txtSpeechInput;
 
     private boolean test;
 
+    public static synchronized MainActivity getInstance() {
+        return mIstance;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mIstance = this;
         setContentView(R.layout.activity_main);
 
         txtSpeechInput = (TextView) findViewById(R.id.textViewResult);
@@ -41,6 +61,31 @@ public class MainActivity extends ActionBarActivity {
             }
         });
 
+    }
+
+    public RequestQueue getRequestQueue() {
+        if (mRequestQueue == null) {
+            mRequestQueue = Volley.newRequestQueue(getApplicationContext());
+        }
+
+        return mRequestQueue;
+    }
+
+    public <T> void addToRequestQueue(Request<T> req, String tag) {
+        // set the default tag if tag is empty
+        req.setTag(TextUtils.isEmpty(tag) ? TAG : tag);
+        getRequestQueue().add(req);
+    }
+
+    public <T> void addToRequestQueue(Request<T> req) {
+        req.setTag(TAG);
+        getRequestQueue().add(req);
+    }
+
+    public void cancelPendingRequests(Object tag) {
+        if (mRequestQueue != null) {
+            mRequestQueue.cancelAll(tag);
+        }
     }
 
     private void promptSpeechInput() {
@@ -90,7 +135,32 @@ public class MainActivity extends ActionBarActivity {
     private void verificaComando(String comando) {
         if (comando.equalsIgnoreCase("cambia colore")) {
             cambiaColoreBackgroud();
+        } else if (comando.startsWith("cerca")) {
+            eseguiRicercaGsa();
         }
+    }
+
+    private void eseguiRicercaGsa() {
+
+        String tag_json_arry = "json_array_req";
+
+        String url = "http://api.androidhive.info/volley/person_array.json";
+
+        JsonArrayRequest req = new JsonArrayRequest(url,
+                new Response.Listener<JSONArray>() {
+                    @Override
+                    public void onResponse(JSONArray response) {
+                        Log.d(TAG, response.toString());
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                VolleyLog.d(TAG, "Error: " + error.getMessage());
+            }
+        });
+
+// Adding request to request queue
+        MainActivity.getInstance().addToRequestQueue(req, tag_json_arry);
     }
 
     private void cambiaColoreBackgroud() {
