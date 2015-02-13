@@ -16,19 +16,19 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.volley.Request;
+import com.android.volley.Request.Method;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.VolleyLog;
-import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 
-import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Random;
-
 
 public class MainActivity extends ActionBarActivity {
 
@@ -142,14 +142,14 @@ public class MainActivity extends ActionBarActivity {
 
     private void eseguiRicercaGsa() {
 
-        String tag_json_arry = "json_array_req";
+        String tag_json_arry = "json_obj_req";
 
-        String url = "http://api.androidhive.info/volley/person_array.json";
+        String url = "http://gsa-fi.noovle.it/search?q=prodotti&client=texa&site=texa&proxystylesheet=texa&oe=utf-8";
 
-        JsonArrayRequest req = new JsonArrayRequest(url,
-                new Response.Listener<JSONArray>() {
+        JsonObjectRequest req = new JsonObjectRequest(Method.GET, url, null,
+                new Response.Listener<JSONObject>() {
                     @Override
-                    public void onResponse(JSONArray response) {
+                    public void onResponse(JSONObject response) {
                         Log.d(TAG, response.toString());
                     }
                 }, new Response.ErrorListener() {
