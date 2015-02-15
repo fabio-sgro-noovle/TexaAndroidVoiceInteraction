@@ -1,5 +1,6 @@
 package it.noovle.android.texaandroidvoiceinteraction;
 
+
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.Color;
@@ -11,7 +12,9 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,8 +27,11 @@ import com.android.volley.VolleyLog;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Random;
@@ -40,6 +46,9 @@ public class MainActivity extends ActionBarActivity {
     private TextView txtSpeechInput;
 
     private boolean test;
+    private ArrayList<Risultato> risultati;
+    private EditText editText;
+    private ListView lista;
 
     public static synchronized MainActivity getInstance() {
         return mIstance;
@@ -51,8 +60,10 @@ public class MainActivity extends ActionBarActivity {
         mIstance = this;
         setContentView(R.layout.activity_main);
 
-        txtSpeechInput = (TextView) findViewById(R.id.textViewResult);
         btnSpeak = (ImageButton) findViewById(R.id.buttonInteraction);
+        editText = (EditText) findViewById(R.id.editText);
+        lista = (ListView) findViewById(R.id.listView);
+
 
         btnSpeak.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -115,42 +126,46 @@ public class MainActivity extends ActionBarActivity {
 
                     ArrayList<String> result = data
                             .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-                    String risultato = " ";
-                    int i = 1;
-                    for (String s : result) {
-                        if (i == 1) {
-                            verificaComando(s);
-                        }
-                        risultato = risultato + i + " --> " + s + " \n ";
-                        i++;
-                    }
-                    txtSpeechInput.setText(risultato);
-                }
-                break;
-            }
+                    String risultato = result.get(0);
 
+                    verificaComando(risultato);
+
+
+                }
+
+            }
+            break;
         }
+
     }
+
 
     private void verificaComando(String comando) {
         if (comando.equalsIgnoreCase("cambia colore")) {
             cambiaColoreBackgroud();
         } else if (comando.startsWith("cerca")) {
-            eseguiRicercaGsa();
+            comando = comando.substring(6);
+            editText.setText(comando);
+            eseguiRicercaGsa(comando);
         }
     }
 
-    private void eseguiRicercaGsa() {
-
+    private void eseguiRicercaGsa(String comando) {
+        try {
+            comando = URLEncoder.encode(comando, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
         String tag_json_arry = "json_obj_req";
 
-        String url = "http://gsa-fi.noovle.it/search?q=prodotti&client=texa&site=texa&proxystylesheet=texa&oe=utf-8";
+        String url = "http://gsa-fi.noovle.it/search?q=" + comando + "&client=texa&site=texa&proxystylesheet=texa&oe=utf-8";
 
         JsonObjectRequest req = new JsonObjectRequest(Method.GET, url, null,
                 new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
                         Log.d(TAG, response.toString());
+                        processa(response);
                     }
                 }, new Response.ErrorListener() {
             @Override
@@ -161,6 +176,30 @@ public class MainActivity extends ActionBarActivity {
 
 // Adding request to request queue
         MainActivity.getInstance().addToRequestQueue(req, tag_json_arry);
+    }
+
+    private void processa(JSONObject resp) {
+        risultati = new ArrayList<Risultato>();
+        try {
+            JSONObject risult = resp.getJSONObject("GSP").getJSONObject("RES");
+            JSONArray ris = risult.getJSONArray("R");
+            for (int i = 0; i < ris.length(); i++) {
+                JSONObject risultato = ris.getJSONObject(i);
+                String numero = risultato.getString("N");
+                String titolo = risultato.getString("T");
+                String url = risultato.getString("U");
+                Risultato risultatoObject = new Risultato(numero, titolo, url);
+                risultati.add(risultatoObject);
+            }
+
+
+            RisultatiAdapter itemsAdapter;
+            itemsAdapter = new RisultatiAdapter(this, risultati);
+            lista.setAdapter(itemsAdapter);
+
+        } catch (Exception e) {
+            VolleyLog.d(TAG, "processa Error: " + e.getMessage());
+        }
     }
 
     private void cambiaColoreBackgroud() {
