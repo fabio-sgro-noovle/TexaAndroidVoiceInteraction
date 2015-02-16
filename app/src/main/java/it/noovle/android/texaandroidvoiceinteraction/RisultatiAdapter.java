@@ -29,10 +29,14 @@ public class RisultatiAdapter extends ArrayAdapter<Risultato> {
         // Lookup view for data population
         TextView numTV = (TextView) convertView.findViewById(R.id.numResult);
         TextView titleTV = (TextView) convertView.findViewById(R.id.titleResult);
+        TextView urlTV = (TextView) convertView.findViewById(R.id.textviewUrl);
         // Populate the data into the template view using the data object
         numTV.setText(r.getNum());
         titleTV.setText(r.getTitolo());
+        urlTV.setText(r.getUrl());
         // Return the completed view to render on screen
         return convertView;
     }
+
+
 }

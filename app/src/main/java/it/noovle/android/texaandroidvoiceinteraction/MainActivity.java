@@ -3,7 +3,7 @@ package it.noovle.android.texaandroidvoiceinteraction;
 
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.support.v7.app.ActionBarActivity;
@@ -12,6 +12,8 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ListView;
@@ -34,7 +36,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Locale;
-import java.util.Random;
 
 public class MainActivity extends ActionBarActivity {
 
@@ -43,12 +44,11 @@ public class MainActivity extends ActionBarActivity {
     private final int REQ_CODE_SPEECH_INPUT = 100;
     private RequestQueue mRequestQueue;
     private ImageButton btnSpeak;
-    private TextView txtSpeechInput;
 
-    private boolean test;
     private ArrayList<Risultato> risultati;
     private EditText editText;
     private ListView lista;
+    private Button btnCerca;
 
     public static synchronized MainActivity getInstance() {
         return mIstance;
@@ -60,15 +60,24 @@ public class MainActivity extends ActionBarActivity {
         mIstance = this;
         setContentView(R.layout.activity_main);
 
-        btnSpeak = (ImageButton) findViewById(R.id.buttonInteraction);
+
         editText = (EditText) findViewById(R.id.editText);
         lista = (ListView) findViewById(R.id.listView);
 
-
+        btnSpeak = (ImageButton) findViewById(R.id.buttonInteraction);
         btnSpeak.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 promptSpeechInput();
+            }
+        });
+
+        btnCerca = (Button) findViewById(R.id.buttonCerca);
+        btnCerca.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String testo = editText.getText().toString();
+                eseguiRicercaGsa(testo);
             }
         });
 
@@ -130,23 +139,20 @@ public class MainActivity extends ActionBarActivity {
 
                     verificaComando(risultato);
 
-
                 }
-
             }
             break;
         }
-
     }
 
 
     private void verificaComando(String comando) {
-        if (comando.equalsIgnoreCase("cambia colore")) {
-            cambiaColoreBackgroud();
-        } else if (comando.startsWith("cerca")) {
+        if (comando.startsWith("cerca")) {
             comando = comando.substring(6);
             editText.setText(comando);
             eseguiRicercaGsa(comando);
+        } else {
+            editText.setText(comando);
         }
     }
 
@@ -158,7 +164,7 @@ public class MainActivity extends ActionBarActivity {
         }
         String tag_json_arry = "json_obj_req";
 
-        String url = "http://gsa-fi.noovle.it/search?q=" + comando + "&client=texa&site=texa&proxystylesheet=texa&oe=utf-8";
+        String url = "http://gsa-fi.noovle.it/search?q=" + comando + "&client=texa&site=texa&proxystylesheet=texa";
 
         JsonObjectRequest req = new JsonObjectRequest(Method.GET, url, null,
                 new Response.Listener<JSONObject>() {
@@ -192,27 +198,33 @@ public class MainActivity extends ActionBarActivity {
                 risultati.add(risultatoObject);
             }
 
-
-            RisultatiAdapter itemsAdapter;
-            itemsAdapter = new RisultatiAdapter(this, risultati);
-            lista.setAdapter(itemsAdapter);
-
         } catch (Exception e) {
             VolleyLog.d(TAG, "processa Error: " + e.getMessage());
         }
-    }
 
-    private void cambiaColoreBackgroud() {
-        Random rnd = new Random();
-        int color = Color.argb(255, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
-        txtSpeechInput.setBackgroundColor(color);
+        RisultatiAdapter itemsAdapter;
+        itemsAdapter = new RisultatiAdapter(this, risultati);
+        lista.setAdapter(itemsAdapter);
+
+        AdapterView.OnItemClickListener listenerClick = new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                TextView tvUrl = (TextView) view.findViewById(R.id.textviewUrl);
+                String url = tvUrl.getText().toString();
+                Log.i("TEXA", "url --> " + url);
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.setData(Uri.parse(url));
+                startActivity(i);
+            }
+        };
+        lista.setOnItemClickListener(listenerClick);
     }
 
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        // getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
