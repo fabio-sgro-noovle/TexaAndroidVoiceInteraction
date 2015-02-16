@@ -1,7 +1,9 @@
 package it.noovle.android.texaandroidvoiceinteraction;
 
 
+import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -151,8 +153,23 @@ public class MainActivity extends ActionBarActivity {
             comando = comando.substring(6);
             editText.setText(comando);
             eseguiRicercaGsa(comando);
+        } else if (comando.startsWith("apri risultato")) {
+            comando = comando.substring(15);
+            apriRisultato(comando);
         } else {
             editText.setText(comando);
+        }
+    }
+
+    private void apriRisultato(String numString) {
+        try {
+            Integer num = Integer.valueOf(numString);
+            Risultato risultato
+                    = risultati.get(num);
+            String url = risultato.getUrl();
+            apriUrl(url);
+        } catch (Exception e) {
+            Log.e("TEXA", "Errore nella apertura " + numString);
         }
     }
 
@@ -198,6 +215,33 @@ public class MainActivity extends ActionBarActivity {
                 risultati.add(risultatoObject);
             }
 
+            //spelling suggestion
+            JSONObject sugger = resp.getJSONObject("GSP").getJSONObject("Spelling");
+            JSONArray arr = sugger.getJSONArray("Suggestion");
+            JSONObject sugg = arr.getJSONObject(0);
+            final String suggerimento = sugg.getString("q");
+
+            DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    switch (which) {
+                        case DialogInterface.BUTTON_POSITIVE:
+                            //Yes button clicked
+                            verificaComando("cerca " + suggerimento);
+                            break;
+
+                        case DialogInterface.BUTTON_NEGATIVE:
+                            //No button clicked
+                            break;
+                    }
+                }
+            };
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage("Forse cercavi " + suggerimento + " ?").setPositiveButton("Yes", dialogClickListener)
+                    .setNegativeButton("No", dialogClickListener).show();
+
+
         } catch (Exception e) {
             VolleyLog.d(TAG, "processa Error: " + e.getMessage());
         }
@@ -212,12 +256,16 @@ public class MainActivity extends ActionBarActivity {
                 TextView tvUrl = (TextView) view.findViewById(R.id.textviewUrl);
                 String url = tvUrl.getText().toString();
                 Log.i("TEXA", "url --> " + url);
-                Intent i = new Intent(Intent.ACTION_VIEW);
-                i.setData(Uri.parse(url));
-                startActivity(i);
+                apriUrl(url);
             }
         };
         lista.setOnItemClickListener(listenerClick);
+    }
+
+    private void apriUrl(String url) {
+        Intent i = new Intent(Intent.ACTION_VIEW);
+        i.setData(Uri.parse(url));
+        startActivity(i);
     }
 
 
