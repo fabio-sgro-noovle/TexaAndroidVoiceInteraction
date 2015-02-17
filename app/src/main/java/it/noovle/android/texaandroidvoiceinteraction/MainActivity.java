@@ -22,6 +22,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.Request.Method;
 import com.android.volley.RequestQueue;
@@ -31,13 +32,16 @@ import com.android.volley.VolleyLog;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class MainActivity extends ActionBarActivity {
 
@@ -150,9 +154,13 @@ public class MainActivity extends ActionBarActivity {
 
     private void verificaComando(String comando) {
         if (comando.startsWith("cerca")) {
-            comando = comando.substring(6);
-            editText.setText(comando);
-            eseguiRicercaGsa(comando);
+            try {
+                comando = comando.substring(6);
+                editText.setText(comando);
+                eseguiRicercaGsa(comando);
+            } catch (Exception e) {
+                Log.e("TEXA", "errore nello split del comando");
+            }
         } else if (comando.startsWith("apri risultato")) {
             comando = comando.substring(15);
             apriRisultato(comando);
@@ -183,7 +191,8 @@ public class MainActivity extends ActionBarActivity {
 
         String url = "http://gsa-fi.noovle.it/search?q=" + comando + "&client=texa&site=texa&proxystylesheet=texa";
 
-        JsonObjectRequest req = new JsonObjectRequest(Method.GET, url, null,
+        JsonObjectRequest req;
+        req = new JsonObjectRequest(Method.GET, url, null,
                 new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
@@ -195,7 +204,15 @@ public class MainActivity extends ActionBarActivity {
             public void onErrorResponse(VolleyError error) {
                 VolleyLog.d(TAG, "Error: " + error.getMessage());
             }
-        });
+
+        }) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("Accept-Language", "it");
+                return params;
+            }
+        };
 
 // Adding request to request queue
         MainActivity.getInstance().addToRequestQueue(req, tag_json_arry);
@@ -209,7 +226,9 @@ public class MainActivity extends ActionBarActivity {
             for (int i = 0; i < ris.length(); i++) {
                 JSONObject risultato = ris.getJSONObject(i);
                 String numero = risultato.getString("N");
+
                 String titolo = risultato.getString("T");
+                titolo = StringEscapeUtils.unescapeHtml4(titolo);
                 String url = risultato.getString("U");
                 Risultato risultatoObject = new Risultato(numero, titolo, url);
                 risultati.add(risultatoObject);
@@ -247,6 +266,9 @@ public class MainActivity extends ActionBarActivity {
         }
 
         RisultatiAdapter itemsAdapter;
+        if (risultati.size() == 0) {
+            Toast.makeText(this, "Nessun risultato trovato", Toast.LENGTH_LONG).show();
+        }
         itemsAdapter = new RisultatiAdapter(this, risultati);
         lista.setAdapter(itemsAdapter);
 
