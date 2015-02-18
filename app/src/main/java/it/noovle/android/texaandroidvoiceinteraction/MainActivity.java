@@ -22,7 +22,6 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.Request.Method;
 import com.android.volley.RequestQueue;
@@ -39,9 +38,7 @@ import org.json.JSONObject;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 
 public class MainActivity extends ActionBarActivity {
 
@@ -126,7 +123,7 @@ public class MainActivity extends ActionBarActivity {
         } catch (ActivityNotFoundException a) {
             Toast.makeText(getApplicationContext(),
                     "TTS NON SUPPORTATO",
-                    Toast.LENGTH_SHORT).show();
+                    Toast.LENGTH_LONG).show();
         }
 
     }
@@ -178,6 +175,9 @@ public class MainActivity extends ActionBarActivity {
             apriUrl(url);
         } catch (Exception e) {
             Log.e("TEXA", "Errore nella apertura " + numString);
+            Toast.makeText(getApplicationContext(),
+                    "NON E' POSSIBILE APRIRE IL RISULTATO RICHIESTO",
+                    Toast.LENGTH_LONG).show();
         }
     }
 
@@ -203,15 +203,18 @@ public class MainActivity extends ActionBarActivity {
             @Override
             public void onErrorResponse(VolleyError error) {
                 VolleyLog.d(TAG, "Error: " + error.getMessage());
+                Toast.makeText(getApplicationContext(),
+                        "PROBLEMI DI CONNESSIONE CON LA GSA",
+                        Toast.LENGTH_LONG).show();
             }
 
         }) {
-            @Override
+/*            @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
                 Map<String, String> params = new HashMap<String, String>();
                 params.put("Accept-Language", "it");
                 return params;
-            }
+            }*/
         };
 
 // Adding request to request queue
